@@ -6,6 +6,8 @@ def savePage(page, localPath='./download/'):
   file.write(localPath + page.content)
 
 def savePageAndFiles(page, localPath='./download/'):
+  if not os.path.exists(localPath):
+      os.makedirs(localPath)
   file = open(localPath + page.getFilename(), 'w+')
   file.write(page.content)
   fileLinks = page.getFiles()
