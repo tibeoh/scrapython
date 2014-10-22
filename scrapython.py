@@ -1,11 +1,12 @@
 import os, sys, string, urllib2
 import Page
+import argparse
 
-def savePage(page, localPath='./download/'):
+def savePage(page, localPath='downloaded-site/'):
   file = open(localPath + page.getFilename(), 'w+')
   file.write(localPath + page.content)
 
-def savePageAndFiles(page, localPath='./download/'):
+def savePageAndFiles(page, localPath='downloaded-site/'):
   if not os.path.exists(localPath):
       os.makedirs(localPath)
   file = open(localPath + page.getFilename(), 'w+')
@@ -24,15 +25,30 @@ def savePageAndFiles(page, localPath='./download/'):
     file = open(localPath + link, 'w+')
     file.write(currentPage.content)
 
+    print link + " -> " + localPath + link
+
 if __name__ == '__main__':
-  if(len(sys.argv)) > 1:
-    url = sys.argv[1]
 
-    f = urllib2.urlopen(url)
-    content = f.read()
-    myPage = Page.Page(content, url)
+  parser = argparse.ArgumentParser(description='Download a website from a given URL.')
+  parser.add_argument('url', help='URL of the website to download')
 
-    savePageAndFiles(myPage)
+  args = parser.parse_args()
 
-  else:
-    print "No argument found"
+  url = args.url
+
+  try:
+      f = urllib2.urlopen(url)
+
+      ## Valid URL
+
+      content = f.read()
+      myPage = Page.Page(content, url)
+
+      savePageAndFiles(myPage)
+
+
+  except urllib2.URLError:
+    print "The webpage " + args.url + " is not accessible. Please check the URL."
+  except:
+    print args.url + " is not a valid URL."
+    parser.print_help()
