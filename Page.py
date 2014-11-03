@@ -12,7 +12,7 @@ class Page:
 
   def getFilename(self, defaultFilename='index.html'):
     splittedPath = urlparse(self.url).path.split('/')
-
+    print splittedPath
     if(splittedPath[len(splittedPath)-1] != ''):
       return splittedPath[len(splittedPath)-1]
     else:

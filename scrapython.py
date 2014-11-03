@@ -1,15 +1,41 @@
 import os, sys, string, urllib2
 import Page
 import argparse
+from urlparse import urlparse
 
 def savePage(page, localPath='downloaded-site/'):
   file = open(localPath + page.getFilename(), 'w+')
   file.write(page.content)
 
+def replaceLinks(filespath, path, links):
+    filespath = "files/"
+    infile = open(path)
+    outfile = open(path+"2", 'w')
+
+    replacements = {}
+    for link in links:
+        splittedPath = urlparse(link).path.split('/')
+        filename = splittedPath[len(splittedPath)-1]
+        replacements.update({link:(filespath+filename)})
+
+    for line in infile:
+        for src, target in replacements.iteritems():
+            line = line.replace(src, target)
+        outfile.write(line)
+    infile.close()
+    outfile.close()
+
+    os.remove(path)
+    os.rename(path+"2", path)
+
+
 def savePageAndFiles(page, downloadedPages, deepLevel=0, localPath='downloaded-site/'):
     localPath = localPath + page.getDomain() + "/"
+    filesPath = localPath + "files/"
     if not os.path.exists(localPath):
         os.makedirs(localPath)
+    if not os.path.exists(filesPath):
+        os.makedirs(filesPath)
 
     savePage(page, localPath)
 
@@ -25,10 +51,15 @@ def savePageAndFiles(page, downloadedPages, deepLevel=0, localPath='downloaded-s
             currentPage = Page.Page(content, url)
 
             # Create folders to save files
-            if not os.path.exists(os.path.dirname(localPath + link)):
-                os.makedirs(os.path.dirname(localPath + link))
+            # if not os.path.exists(os.path.dirname(localPath + link)):
+            #     os.makedirs(os.path.dirname(localPath + link))
+            #
+            # file = open(localPath + link, 'w+')
+            # file.write(currentPage.content)
 
-            file = open(localPath + link, 'w+')
+            splittedPath = urlparse(link).path.split('/')
+            filename = splittedPath[len(splittedPath)-1]
+            file = open(filesPath + filename, 'w+')
             file.write(currentPage.content)
 
             print link + " -> " + localPath + link
@@ -37,6 +68,9 @@ def savePageAndFiles(page, downloadedPages, deepLevel=0, localPath='downloaded-s
         except Exception as inst:
           print inst
           print "file" + url + " is not a valid URL."
+
+    replaceLinks(filesPath, localPath + page.getFilename(), fileLinks)
+
 
     ## recursion in links
     if(deepLevel > 0):
