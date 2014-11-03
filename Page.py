@@ -21,7 +21,6 @@ class Page:
   def getDomain(self):
     return urlparse(self.url)[1]
 
-
   def getLinkDomain(self, link):
     domain = self.getDomain()
     parsedLink = urlparse(link)
@@ -37,7 +36,7 @@ class Page:
   def getAllLinks(self, max=200):
     dom =  lxml.html.fromstring(self.content)
     links = []
-    for link in dom.xpath('//a/@href'): # select the url in href for all a tags(links)
+    for link in dom.xpath('//a/@href'): # select the url in href for all a   tags(links)
       links.append(link)
     return links
 
@@ -57,15 +56,14 @@ class Page:
     dom =  lxml.html.fromstring(self.content)
     links = []
     for link in dom.xpath('//link/@href'): # select the url in href for all link tags
-      links.append(link)
+        if self.getLinkDomain(link) == self.getDomain():
+            links.append(link)
     for link in dom.xpath('//script/@src'): # select the url in href for all script tags
-      links.append(link)
+        if self.getLinkDomain(link) == self.getDomain():
+            links.append(link)
     for link in dom.xpath('//img/@src'): # select the url in href for all img tags
-      links.append(link)
-
-    for link in links: # remove links from other domains
-      if self.getLinkDomain(link) != self.getDomain():
-        links.remove(link)
+        if self.getLinkDomain(link) == self.getDomain():
+            links.append(link)
     return links
 
 class Test:
