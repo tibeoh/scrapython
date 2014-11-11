@@ -7,36 +7,25 @@ def savePage(page, localPath='downloaded-site/'):
   file = open(localPath + page.getFilename(), 'w+')
   file.write(page.content)
 
-def saveFile(page, path):
+def saveFile(content, path):
   file = open(path, 'w+')
-  file.write(page.content)
+  file.write(content)
 
 
-def replaceLinks(filespath, path, links):
-    filespath = "files/"
+def replaceLinks(filesDir, path, pageLinksReplacements):
+
     infile = open(path)
     outfile = open(path+"temp", 'w')
 
 
     replacements = {}
-    for link in links.keys():
-        #splittedPath = urlparse(link).path.split('/')
-        #filename = splittedPath[len(splittedPath)-1]
-        replacements[link] = filespath+links[link]
 
-
+    # add the local path of files in replacement
+    for link in pageLinksReplacements.keys():
+        replacements[link] = filesDir+pageLinksReplacements[link]
 
     for line in infile:
         for src, target in replacements.iteritems():
-            # if target == "files/intitule.png":
-            #   print "src" + src
-            #   print "target" + target
-            # if target == "files/intitule2.png":
-            #   print "src" + src
-            #   print "target2" + target
-            # if target == "files/intitule3.png":
-            #   print "src" + src
-            #   print "target3" + target
             line = line.replace(src, target)
         outfile.write(line)
     infile.close()
@@ -45,80 +34,75 @@ def replaceLinks(filespath, path, links):
     os.remove(path)
     os.rename(path+"temp", path)
 
+def saveAllFiles(filesPath, downloadedFiles, fileLinks, pageBaseUrl, pageName):
 
-def savePageAndFiles(page, downloadedPages, downloadedFiles, deepLevel=0, localPath='downloaded-site/'):
+  if not os.path.exists(filesPath):
+      os.makedirs(filesPath)
+
+  pageLinksReplacements = {}
+  for link in fileLinks:
+      url = pageBaseUrl + link
+      try:
+          splittedPath = urlparse(link).path.split('/')
+          filename = splittedPath[len(splittedPath)-1]
+
+          if link in downloadedFiles.keys():
+            # le fichier a deja ete telecharge on l\'ajoute au remplacement de la page actuelle
+            pageLinksReplacements[link] = filename
+
+          else:
+            # le fichier n\'a jamais ete telecharge
+            # on va le telecharger de toute facon donc on l\'ouvre
+            f = urllib2.urlopen(url)
+            fileContent = f.read()
+
+            if filename in downloadedFiles.values():
+              # un fichier avec le mm nom a ete telecharge
+              # On le renome avec un increment
+              # count the number of files with the same filename
+              count = 0
+              for val in downloadedFiles.values():
+                if val == filename:
+                  count = count+1
+
+              filenameWithoutExtension, extension = os.path.splitext(filename)
+              filenameWithoutExtensionPlusCount = filenameWithoutExtension + str(count) + pageName
+
+              pageLinksReplacements[link] = filenameWithoutExtensionPlusCount + extension
+              newPath = filesPath + filenameWithoutExtensionPlusCount + extension
+
+              saveFile(fileContent, newPath)
+
+            else:
+              # jamais ete dl et possede un nom different, on le telecharge
+              saveFile(fileContent, filesPath + filename)
+              pageLinksReplacements[link] = filename
+
+          downloadedFiles[link] = filename
+
+      except urllib2.URLError:
+        print ("file at " + url + " is not accessible. Please check the URL.")
+      except Exception as inst:
+        print (inst)
+        print ("file at " + url + " has not a valid URL.")
+
+
+  return pageLinksReplacements
+
+def savePageAndFiles(page, downloadedPages, downloadedFiles, deepLevel=0, localPath='downloaded-site/', filesDir='files/'):
     localPath = localPath + page.getDomain() + "/"
     filesPath = localPath + "files/"
+
     if not os.path.exists(localPath):
         os.makedirs(localPath)
-    if not os.path.exists(filesPath):
-        os.makedirs(filesPath)
 
     savePage(page, localPath)
-
     downloadedPages.append(page.getBaseUrl() + page.getFilename())
 
     ## Saving files associated to current page.
-    fileLinks = page.getFiles()
-    localPathLinks = {}
-    for link in fileLinks:
-        url = page.getBaseUrl() + link
-        try:
-            splittedPath = urlparse(link).path.split('/')
-            filename = splittedPath[len(splittedPath)-1]
+    pageLinksReplacements = saveAllFiles(filesPath, downloadedFiles, page.getFilesLinks(), page.getBaseUrl(), page.getFilename())
 
-            if link in downloadedFiles.keys():
-              # le fichier a deja ete telecharge on l\'ajoute au remplacement de la page actuelle
-              localPathLinks[link] = filename
-
-            else:
-              # le fichier n\'a jamais ete telecharge
-              # on va le telecharger de toute facon donc on l\'ouvre
-              f = urllib2.urlopen(url)
-              content = f.read()
-              currentPage = Page.Page(content, url)
-
-              if filename in downloadedFiles.values():
-                # un fichier avec le mm nom a ete telecharge
-                # On le renome avec un increment
-                # count the number of files with the same filename
-                count = 0
-                for val in downloadedFiles.values():
-                  if val == filename:
-                    count = count+1
-
-                filenameWithoutExtension, extension = os.path.splitext(filename)
-                filenameWithoutExtensionPlusCount = filenameWithoutExtension + str(count) + page.getFilename()
-
-                localPathLinks[link] = filenameWithoutExtensionPlusCount + extension
-                newPath = filesPath + filenameWithoutExtensionPlusCount + extension
-
-                saveFile(currentPage, newPath)
-
-                #print link + " -> " + localPath + link
-
-              else:
-                # jamais ete dl et possede un nom different, on le telecharge
-                saveFile(currentPage, filesPath + filename)
-                localPathLinks[link] = filename
-                #print link + " -> " + localPath + link
-            downloadedFiles[link] = filename
-            # for key in localPathLinks:
-            #   print (key)
-            #   print (localPathLinks[key])
-
-
-
-        except urllib2.URLError:
-          print ("file " + url + " is not accessible. Please check the URL.")
-        except Exception as inst:
-          print (inst)
-          print ("file " + url + " is not a valid URL.")
-
-
-
-    replaceLinks(filesPath, localPath + page.getFilename(), localPathLinks)
-
+    replaceLinks(filesDir, localPath + page.getFilename(), pageLinksReplacements)
 
     ## recursion in links
     if(deepLevel > 0):
@@ -135,7 +119,8 @@ def savePageAndFiles(page, downloadedPages, downloadedFiles, deepLevel=0, localP
                     savePageAndFiles(myPage, downloadedPages, downloadedFiles, deepLevel-1)
                 except urllib2.URLError:
                       print ("Link error: " + pageLink + " is not accessible.")
-                except:
+                except Exception as inst:
+                      print inst
                       print ("Link error: " + pageLink + " is not a valid URL.")
 
 if __name__ == '__main__':
@@ -168,16 +153,16 @@ if __name__ == '__main__':
       # instanciate a page object
       myPage = Page.Page(content, url)
       # in order to keep track of the saved pages (to not download again the same pages)
-      downloadedPages = []
-
-      downloadedFiles = {}
+      downloadedPages = [] # values: URL
+      downloadedFiles = {} # key: URL value: filename
       # call of the recursive function that download a page according the
       savePageAndFiles(myPage, downloadedPages, downloadedFiles, deepLevel)
 
 
-  except urllib2.error.URLError:
+  except urllib2.URLError:
    # The URL is valid but the page is not accessible (network or server error etc.)
    print ("The webpage " + url + " is not accessible. Please check the URL.")
   except Exception as inst:
+    print inst
     print (url + " is not a valid URL.")
     parser.print_help()

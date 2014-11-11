@@ -50,7 +50,7 @@ class Page:
     return domainLinks
 
 
-  def getFiles(self, max=50):
+  def getFilesLinks(self, max=50):
 
     dom =  lxml.html.fromstring(self.content)
     links = []
