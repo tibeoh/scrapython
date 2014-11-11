@@ -56,11 +56,15 @@ class Page:
     links = []
     for link in dom.xpath('//link/@href'): # select the url in href for all link tags
         if self.getLinkDomain(link) == self.getDomain():
+          if link not in links:
             links.append(link)
     for link in dom.xpath('//script/@src'): # select the url in href for all script tags
         if self.getLinkDomain(link) == self.getDomain():
+          if link not in links:
             links.append(link)
     for link in dom.xpath('//img/@src'): # select the url in href for all img tags
         if self.getLinkDomain(link) == self.getDomain():
-            links.append(link)
+            if link not in links:
+              links.append(link)
+
     return links

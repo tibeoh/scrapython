@@ -6,10 +6,12 @@ from urlparse import urlparse
 def savePage(page, localPath='downloaded-site/'):
   file = open(localPath + page.getFilename(), 'w+')
   file.write(page.content)
+  print "saving " + page.getFilename()
 
 def saveFile(content, path):
   file = open(path, 'w+')
   file.write(content)
+  print "file saved -> " + path
 
 
 def replaceLinks(filesDir, path, pageLinksReplacements):
@@ -66,7 +68,7 @@ def saveAllFiles(filesPath, downloadedFiles, fileLinks, pageBaseUrl, pageName):
                   count = count+1
 
               filenameWithoutExtension, extension = os.path.splitext(filename)
-              filenameWithoutExtensionPlusCount = filenameWithoutExtension + str(count) + pageName
+              filenameWithoutExtensionPlusCount = filenameWithoutExtension + "-" + str(count) # + pageName
 
               pageLinksReplacements[link] = filenameWithoutExtensionPlusCount + extension
               newPath = filesPath + filenameWithoutExtensionPlusCount + extension
@@ -85,7 +87,6 @@ def saveAllFiles(filesPath, downloadedFiles, fileLinks, pageBaseUrl, pageName):
       except Exception as inst:
         print (inst)
         print ("file at " + url + " has not a valid URL.")
-
 
   return pageLinksReplacements
 
