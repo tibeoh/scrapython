@@ -43,7 +43,13 @@ def saveAllFiles(filesPath, downloadedFiles, fileLinks, pageBaseUrl, pageName):
 
   pageLinksReplacements = {}
   for link in fileLinks:
-      url = pageBaseUrl + link
+      if not urlparse(link).scheme:
+        print "add base " + link
+        url = pageBaseUrl + link
+      else:
+        print "add pas " + link
+        url = link
+      #url = pageBaseUrl + link
       try:
           splittedPath = urlparse(link).path.split('/')
           filename = splittedPath[len(splittedPath)-1]
@@ -68,7 +74,7 @@ def saveAllFiles(filesPath, downloadedFiles, fileLinks, pageBaseUrl, pageName):
                   count = count+1
 
               filenameWithoutExtension, extension = os.path.splitext(filename)
-              filenameWithoutExtensionPlusCount = filenameWithoutExtension + "-" + str(count) # + pageName
+              filenameWithoutExtensionPlusCount = filenameWithoutExtension + "-" + str(count) + pageName
 
               pageLinksReplacements[link] = filenameWithoutExtensionPlusCount + extension
               newPath = filesPath + filenameWithoutExtensionPlusCount + extension
@@ -147,6 +153,8 @@ if __name__ == '__main__':
   # urllib2 test tha validity and accesibilty of an URL and a website.
   # it can throw exceptions in case of errors so we have to catch them to prevent any crash
   try:
+      if not urlparse(url).scheme:
+        url = "http://"+url
       f = urllib2.urlopen(url)
 
       # Valid URL

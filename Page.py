@@ -43,10 +43,17 @@ class Page:
     links = self.getAllLinks()
     domainLinks = []
     domain = self.getDomain()
-    for link in links: # select the url in href for all a tags(links)
+    for link in links:
       parsedLink = urlparse(link)
-      if(parsedLink[1] == '' or parsedLink[1] == domain): # No or same domain
+
+      # if link relatif
+      if(parsedLink[1] == domain): # No or same domain
         domainLinks.append(link)
+
+      if(parsedLink[1] == ''):
+        domainLinks.append(domain + link)
+
+      # if absolute
     return domainLinks
 
 
