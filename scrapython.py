@@ -2,20 +2,26 @@ import os, urllib2
 import Page
 import argparse
 from urlparse import urlparse
+import logging
 
 def savePage(page, localPath='downloaded-site/'):
-  file = open(localPath + page.getFilename(), 'w+')
-  file.write(page.content)
-  print "saving " + page.getFilename()
+  try:
+    file = open(localPath + page.getDestinationPath() + page.getFilename(), 'w+')
+    file.write(page.content)
+    logging.info("saving " + page.getDestinationPath())
+  except Exception as inst:
+      logging.error('Error saving Page: ' + inst)
 
 def saveFile(content, path):
-  file = open(path, 'w+')
-  file.write(content)
-  print "file saved -> " + path
+  try:
+    file = open(path, 'w+')
+    file.write(content)
+    logging.info("file saved -> " + path)
+  except Exception as inst:
+    logging.error('Error saving File: ' + inst)
 
 
 def replaceLinks(filesDir, path, pageLinksReplacements):
-
     infile = open(path)
     outfile = open(path+"temp", 'w')
 
@@ -44,10 +50,8 @@ def saveAllFiles(filesPath, downloadedFiles, fileLinks, pageBaseUrl, pageName):
   pageLinksReplacements = {}
   for link in fileLinks:
       if not urlparse(link).scheme:
-        print "add base " + link
         url = pageBaseUrl + link
       else:
-        print "add pas " + link
         url = link
       #url = pageBaseUrl + link
       try:
@@ -89,10 +93,10 @@ def saveAllFiles(filesPath, downloadedFiles, fileLinks, pageBaseUrl, pageName):
           downloadedFiles[link] = filename
 
       except urllib2.URLError:
-        print ("file at " + url + " is not accessible. Please check the URL.")
+        logging.warning("file at " + url + " is not accessible. Please check the URL.")
       except Exception as inst:
-        print (inst)
-        print ("file at " + url + " has not a valid URL.")
+        logging.error(inst)
+        logging.error("file at " + url + " has not a valid URL.")
 
   return pageLinksReplacements
 
@@ -104,19 +108,19 @@ def savePageAndFiles(page, downloadedPages, downloadedFiles, deepLevel=0, localP
     if not os.path.exists(localPath):
         os.makedirs(localPath)
 
+
     savePage(page, localPath)
     downloadedPages.append(page.getBaseUrl() + page.getFilename())
 
     ## Saving files associated to current page.
-    pageLinksReplacements = saveAllFiles(filesPath, downloadedFiles, page.getFilesLinks(), page.getBaseUrl(), page.getFilename())
+    pageLinksReplacements = saveAllFiles(filesPath, downloadedFiles, page.getFilesLinks(deepLevel, page.getFilename()), page.getBaseUrl(), page.getFilename())
 
-    replaceLinks(filesDir, localPath + page.getFilename(), pageLinksReplacements)
+    replaceLinks(filesDir, localPath + page.getDestinationPath() + page.getFilename(), pageLinksReplacements)
 
     ## recursion in links
     if(deepLevel > 0):
         pageLinks = page.getDomainLinks()
         for pageLink in pageLinks:
-            pageLink = page.getBaseUrl() + pageLink
             if(pageLink not in downloadedPages):
                 try:
                     f = urllib2.urlopen(pageLink)
@@ -124,12 +128,14 @@ def savePageAndFiles(page, downloadedPages, downloadedFiles, deepLevel=0, localP
                     content = f.read()
                     myPage = Page.Page(content, pageLink)
                     # self calling
+
+                    # if html page
                     savePageAndFiles(myPage, downloadedPages, downloadedFiles, deepLevel-1)
                 except urllib2.URLError:
-                      print ("Link error: " + pageLink + " is not accessible.")
+                    logging.warning("Link error: " + pageLink + " is not accessible.")
                 except Exception as inst:
-                      print inst
-                      print ("Link error: " + pageLink + " is not a valid URL.")
+                    logging.error(inst)
+                    logging.error("Link error: " + pageLink + " is not a valid URL.")
 
 if __name__ == '__main__':
 
@@ -182,8 +188,8 @@ if __name__ == '__main__':
 
   except urllib2.URLError:
    # The URL is valid but the page is not accessible (network or server error etc.)
-   print ("The webpage " + url + " is not accessible. Please check the URL.")
+   logging.error("The webpage " + url + " is not accessible. Please check the URL.")
   except Exception as inst:
-    print inst
-    print (url + " is not a valid URL.")
+    logging.error(inst)
+    logging.error(url + " is not a valid URL.")
     parser.print_help()
