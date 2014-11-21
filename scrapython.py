@@ -100,6 +100,7 @@ def savePageAndFiles(page, downloadedPages, downloadedFiles, deepLevel=0, localP
     localPath = localPath + page.getDomain() + "/"
     filesPath = localPath + "files/"
 
+    ## Creates the site download directory if it doesn't exist
     if not os.path.exists(localPath):
         os.makedirs(localPath)
 
@@ -136,7 +137,9 @@ if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Download a website from a given URL.')
   # Add different arguments
   parser.add_argument('url', help='URL of the website to download')
+  parser.add_argument('--dest', help='Destination directory to download to site')
   parser.add_argument('--rec', type=int, help='Deepness of link recursion')
+
 
   # args contrains the passed arg values
   args = parser.parse_args()
@@ -164,8 +167,17 @@ if __name__ == '__main__':
       # in order to keep track of the saved pages (to not download again the same pages)
       downloadedPages = [] # values: URL
       downloadedFiles = {} # key: URL value: filename
-      # call of the recursive function that download a page according the
-      savePageAndFiles(myPage, downloadedPages, downloadedFiles, deepLevel)
+
+      # call of the recursive function that download the site starting from a page
+      # to the right directory
+      if(args.dest != None):
+          if(args.dest.endswith('/')):
+            destDir = args.dest
+          else:
+            destDir = args.dest + '/'
+          savePageAndFiles(myPage, downloadedPages, downloadedFiles, deepLevel, destDir)
+      else:
+          savePageAndFiles(myPage, downloadedPages, downloadedFiles, deepLevel)
 
 
   except urllib2.URLError:
